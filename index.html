@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MW PO Name Generator</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #1e1e1e;
+            color: #eee;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: #1a1a1a;
+            color: #E20074;
+            padding: 16px 28px;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 0.3px;
+        }
+
+        .nav {
+            background: #111;
+            display: flex;
+            gap: 6px;
+            padding: 10px 20px;
+        }
+
+        .nav-btn {
+            background: #2a2a2a;
+            color: #aaa;
+            border: none;
+            padding: 8px 22px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.15s;
+        }
+
+        .nav-btn.active { background: #555; color: white; }
+        .nav-btn:hover  { background: #444; color: white; }
+
+        .screen { display: none; padding: 24px; }
+        .screen.active { display: block; }
+
+        .panel {
+            background: #2a2a2a;
+            border-radius: 14px;
+            border: 1px solid #444;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .layout-two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-weight: 700;
+            font-size: 13px;
+            color: #fff;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 8px 12px;
+            border: 1.5px solid #E20074;
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+            background: #1e1e1e;
+            color: #eee;
+            transition: border-color 0.15s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus { border-color: #fff; }
+
+        .form-group input::placeholder { color: #555; }
+
+        .full-width { grid-column: 1 / -1; }
+
+        .btn {
+            padding: 10px 26px;
+            border-radius: 24px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            background: #E20074;
+            color: white;
+            transition: opacity 0.15s;
+        }
+
+        .btn:hover { opacity: 0.85; }
+        .btn-primary { background: #E20074; color: white; }
+        .btn-outline  { background: #E20074; color: white; }
+        .btn-danger   { background: #E20074; color: white; }
+        .btn-sm       { padding: 6px 14px; font-size: 12px; border-radius: 16px; }
+
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .po-output {
+            background: #6a6a6a;
+            border: 1.5px solid #E20074;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 14px;
+            min-height: 58px;
+            word-break: break-all;
+            color: #fff;
+            line-height: 1.5;
+        }
+
+        .validation-box {
+            background: #6a6a6a;
+            border: 1.5px solid #E20074;
+            border-radius: 8px;
+            padding: 12px 14px;
+            font-size: 13px;
+            min-height: 58px;
+            white-space: pre-line;
+            color: #ffccdd;
+            line-height: 1.6;
+        }
+
+        .section-label {
+            font-weight: 700;
+            font-size: 13px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        /* Admin screen */
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #444;
+            font-size: 14px;
+            color: #eee;
+        }
+
+        .admin-item:last-child { border-bottom: none; }
+
+        .add-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .add-row input {
+            flex: 1;
+            padding: 9px 14px;
+            border: 1.5px solid #E20074;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            background: #1e1e1e;
+            color: #eee;
+        }
+
+        .add-row input:focus { border-color: #fff; }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #E20074;
+            color: white;
+            padding: 12px 28px;
+            border-radius: 24px;
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        #toast.show { opacity: 1; }
+
+        @media (max-width: 800px) {
+            .layout-two-col { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">MW PO Name Generator</div>
+
+<nav class="nav">
+    <button class="nav-btn" id="navAdmin" onclick="navigate('admin')" style="display:none">Admin Masters</button>
+    <button class="nav-btn active" id="navGenerator" onclick="navigate('generator')">Generator</button>
+</nav>
+
+<!-- GENERATOR SCREEN -->
+<div class="screen active" id="screenGenerator">
+    <div class="layout-two-col">
+
+        <div class="panel">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Donor Site ID *</label>
+                    <input type="text" id="txtDonorSite" placeholder="8 characters" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>Recipient Site ID *</label>
+                    <input type="text" id="txtRecipientSite" placeholder="8 characters" maxlength="20">
+                </div>
+                <div class="form-group">
+                    <label>MW Link ID *</label>
+                    <input type="text" id="txtMWLink" placeholder="7 numbers" maxlength="10">
+                </div>
+                <div class="form-group">
+                    <label>MLA Site ID (optional)</label>
+                    <input type="text" id="txtMLASite" placeholder="optional">
+                </div>
+                <div class="form-group">
+                    <label>If Donor *</label>
+                    <select id="ddIfDonor">
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Service *</label>
+                    <select id="cmbService">
+                        <option value="">-- Select --</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label>Vendor *</label>
+                    <select id="cmbVendor">
+                        <option value="">-- Select --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <div class="section-label">Generated PO Name</div>
+                <div class="po-output" id="poOutput"></div>
+            </div>
+            <div class="panel">
+                <div class="section-label">Validation</div>
+                <div class="validation-box" id="validationBox"></div>
+            </div>
+            <div class="btn-row">
+                <button class="btn btn-primary" onclick="generate()">Generate</button>
+                <button class="btn btn-outline"  onclick="copyPO()">Copy</button>
+                <button class="btn btn-danger"   onclick="resetForm()">Reset</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ADMIN MASTERS SCREEN -->
+<div class="screen" id="screenAdmin">
+    <div class="layout-two-col">
+
+        <div class="panel">
+            <h3 style="margin-bottom:16px; font-size:16px;">Vendors</h3>
+            <div id="vendorList"></div>
+            <div class="add-row">
+                <input type="text" id="txtNewVendor" placeholder="New vendor name">
+                <button class="btn btn-primary" onclick="addVendor()">Add</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3 style="margin-bottom:16px; font-size:16px;">Services</h3>
+            <div id="serviceList"></div>
+            <div class="add-row">
+                <input type="text" id="txtNewService" placeholder="New service name">
+                <button class="btn btn-primary" onclick="addService()">Add</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ADMIN EMAIL — only this address sees Admin Masters
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const ADMIN_EMAIL = 'daniel.2.sage@t-mobile.com';
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DEFAULT DATA — edit these arrays to update the lists
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const DEFAULT_VENDORS = [
+    'Alamon', 'Apex', 'ATC', 'Betacom', 'CCC', 'Crown', 'Ericsson', 'EWS', 'HDC',
+    'Infraservices', 'Infinity', 'Intellicom', 'Mastec',
+    'NetCon', 'Nokia', 'Novacom', 'OWN', 'RLS', 'Romano',
+    'SBA', 'SMLK', 'TruNorthe', 'VB'
+];
+
+const DEFAULT_SERVICES = [
+    'MW BH Support', 'MW Install', 'MW IX Support',
+    'MW LOS', 'MW OOS', 'MW PCN', 'MW REG', 'MW SC MS', 'MW Troubleshooting'
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STATE — stored in memory only (no server needed)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let vendors  = [...DEFAULT_VENDORS].sort();
+let services = [...DEFAULT_SERVICES].sort();
+let isAdmin  = false;
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// INIT
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function init() {
+    // Try to detect logged-in user from SharePoint context if available
+    detectUser();
+    populateDropdowns();
+}
+
+function detectUser() {
+    // Attempt SharePoint user detection — works when hosted on SharePoint
+    if (typeof _spPageContextInfo !== 'undefined' && _spPageContextInfo.userEmail) {
+        const email = _spPageContextInfo.userEmail.toLowerCase();
+        if (email === ADMIN_EMAIL.toLowerCase()) {
+            isAdmin = true;
+            document.getElementById('navAdmin').style.display = 'inline-block';
+        }
+        return;
+    }
+
+    // Fallback: try SharePoint REST API
+    fetch('/_api/web/currentUser', {
+        headers: { 'Accept': 'application/json;odata=nometadata' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        const email = (data.Email || '').toLowerCase();
+        if (email === ADMIN_EMAIL.toLowerCase()) {
+            isAdmin = true;
+            document.getElementById('navAdmin').style.display = 'inline-block';
+        }
+    })
+    .catch(() => {
+        // Not on SharePoint — admin tab stays hidden
+    });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DROPDOWNS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function populateDropdowns() {
+    const vs = document.getElementById('cmbVendor');
+    vs.innerHTML = '<option value="">-- Select --</option>';
+    vendors.forEach(v => {
+        const o = document.createElement('option');
+        o.value = o.textContent = v;
+        vs.appendChild(o);
+    });
+
+    const ss = document.getElementById('cmbService');
+    ss.innerHTML = '<option value="">-- Select --</option>';
+    services.forEach(s => {
+        const o = document.createElement('option');
+        o.value = o.textContent = s;
+        ss.appendChild(o);
+    });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// NAVIGATION
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function navigate(screen) {
+    if (screen === 'admin' && !isAdmin) {
+        showToast('Access denied.');
+        return;
+    }
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const key = screen.charAt(0).toUpperCase() + screen.slice(1);
+    document.getElementById('screen' + key).classList.add('active');
+    document.getElementById('nav'    + key).classList.add('active');
+    if (screen === 'admin') renderAdminLists();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// GENERATOR
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function generate() {
+    const donor     = document.getElementById('txtDonorSite').value.trim().toUpperCase();
+    const recipient = document.getElementById('txtRecipientSite').value.trim().toUpperCase();
+    const mwlink    = document.getElementById('txtMWLink').value.trim();
+    const mlasite   = document.getElementById('txtMLASite').value.trim().toUpperCase();
+    const ifDonor   = document.getElementById('ddIfDonor').value;
+    const service   = document.getElementById('cmbService').value;
+    const vendor    = document.getElementById('cmbVendor').value;
+
+    const errors = [];
+    if (!donor)                                                 errors.push('Donor Site ID is required.');
+    else if (donor.length !== 8)                                errors.push('Donor Site ID must be exactly 8 characters.');
+    if (!recipient)                                             errors.push('Recipient Site ID is required.');
+    else if (recipient.length !== 8)                            errors.push('Recipient Site ID must be exactly 8 characters.');
+    if (!mwlink)                                                errors.push('MW Link ID is required.');
+    else if (mwlink.length !== 7 || !/^\d+$/.test(mwlink))     errors.push('MW Link ID must be exactly 7 numbers.');
+    if (!service)                                               errors.push('Service is required.');
+    if (!vendor)                                                errors.push('Vendor is required.');
+    if (donor && recipient && donor === recipient)              errors.push('Donor and Recipient cannot be the same.');
+
+    const poOutput      = document.getElementById('poOutput');
+    const validationBox = document.getElementById('validationBox');
+
+    if (errors.length > 0) {
+        validationBox.textContent = errors.join('\n');
+        poOutput.textContent = '';
+    } else {
+        validationBox.textContent = '';
+        let po = `${donor}(D)-${recipient}(R) ${mwlink}`;
+        if (mlasite)           po += ` [${mlasite}]`;
+        if (ifDonor === 'Yes') po += ' [DONOR]';
+        po += ` ${service} - ${vendor}`;
+        poOutput.textContent = po;
+    }
+}
+
+function copyPO() {
+    const po = document.getElementById('poOutput').textContent.trim();
+    if (!po) { showToast('Generate a PO Name first.'); return; }
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(po).then(() => showToast('Copied!'));
+    } else {
+        const ta = document.createElement('textarea');
+        ta.value = po;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showToast('Copied!');
+    }
+}
+
+function resetForm() {
+    ['txtDonorSite','txtRecipientSite','txtMWLink','txtMLASite'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('ddIfDonor').value  = 'No';
+    document.getElementById('cmbService').value = '';
+    document.getElementById('cmbVendor').value  = '';
+    document.getElementById('poOutput').textContent      = '';
+    document.getElementById('validationBox').textContent = '';
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ADMIN MASTERS
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderAdminLists() {
+    renderList('vendorList',  vendors,  'vendor');
+    renderList('serviceList', services, 'service');
+}
+
+function renderList(containerId, items, type) {
+    const container = document.getElementById(containerId);
+    if (items.length === 0) {
+        container.innerHTML = '<div style="color:#aaa;font-size:13px;padding:8px 0;">No items.</div>';
+        return;
+    }
+    container.innerHTML = items.map((item, i) => `
+        <div class="admin-item">
+            <span>${escHtml(item)}</span>
+            <button class="btn btn-danger btn-sm" onclick="deleteItem('${type}', ${i})">Delete</button>
+        </div>`
+    ).join('');
+}
+
+function addVendor() {
+    const name = document.getElementById('txtNewVendor').value.trim();
+    if (!name) { showToast('Enter a vendor name first.'); return; }
+    if (vendors.includes(name)) { showToast('Vendor already exists.'); return; }
+    vendors.push(name);
+    vendors.sort();
+    document.getElementById('txtNewVendor').value = '';
+    renderList('vendorList', vendors, 'vendor');
+    populateDropdowns();
+    showToast('Vendor added.');
+}
+
+function addService() {
+    const name = document.getElementById('txtNewService').value.trim();
+    if (!name) { showToast('Enter a service name first.'); return; }
+    if (services.includes(name)) { showToast('Service already exists.'); return; }
+    services.push(name);
+    services.sort();
+    document.getElementById('txtNewService').value = '';
+    renderList('serviceList', services, 'service');
+    populateDropdowns();
+    showToast('Service added.');
+}
+
+function deleteItem(type, index) {
+    if (type === 'vendor') {
+        vendors.splice(index, 1);
+        renderList('vendorList', vendors, 'vendor');
+    } else {
+        services.splice(index, 1);
+        renderList('serviceList', services, 'service');
+    }
+    populateDropdowns();
+    showToast('Item removed.');
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UTILITIES
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer;
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+init();
+</script>
+</body>
+</html>
